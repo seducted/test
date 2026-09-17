@@ -3,7 +3,7 @@ local Library = (function()
 local InputService = game:GetService('UserInputService');
 local TextService = game:GetService('TextService');
 local HttpService = game:GetService('HttpService');
-local CoreGui = cloneref(game:GetService('CoreGui'));
+local CoreGui = game:GetService('CoreGui');
 local Teams = game:GetService('Teams');
 local Players = game:GetService('Players');
 local RunService = game:GetService('RunService');
@@ -11,7 +11,7 @@ local TweenService = game:GetService('TweenService');
 local SoundService = game:GetService('SoundService');
 local RenderStepped = RunService.RenderStepped;
 local LocalPlayer = Players.LocalPlayer;
-local Mouse = cloneref(LocalPlayer:GetMouse());
+local Mouse = LocalPlayer:GetMouse();
 
 local function IsPrimaryPress(Input)
     return Input.UserInputType == Enum.UserInputType.MouseButton1
@@ -35,7 +35,7 @@ end;
 
 local IsTouchDevice = InputService.TouchEnabled and not InputService.MouseEnabled;
 
-local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
+local ProtectGui = function() end;
 
 local ScreenGui = Instance.new('ScreenGui');
 ProtectGui(ScreenGui);
@@ -46,8 +46,7 @@ ScreenGui.Parent = CoreGui;
 local Toggles = {};
 local Options = {};
 
-getgenv().Toggles = Toggles;
-getgenv().Options = Options;
+
 
 local BaseGroupbox;
 
@@ -116,110 +115,7 @@ for _, entry in ENUM_UI_FONT_ENTRIES do
     end;
 end;
 
-local CUSTOM_UI_FONTS = {
-    ['ProggyTiny'] = {
-        Ttf = 'ProggyTiny.ttf',
-        Url = 'https://github.com/ocornut/imgui/raw/master/misc/fonts/ProggyTiny.ttf',
-    },
-    ['ProggyClean'] = {
-        Ttf = 'ProggyClean.ttf',
-        Url = 'https://github.com/ocornut/imgui/raw/master/misc/fonts/ProggyClean.ttf',
-    },
-    ['XP Tahoma'] = {
-        Ttf = 'XP Tahoma.ttf',
-        Url = 'https://github.com/sametexe001/luas/raw/refs/heads/main/fonts/TAHOMA-8PT-BOLD-WINDOWS-XP.TTF',
-    },
-    ['Smallest Pixel'] = {
-        Ttf = 'smallest_pixel-7.ttf',
-        Url = 'https://raw.githubusercontent.com/sametexe001/luas/main/smallest_pixel-7.ttf',
-    },
-    ['Tahoma'] = {
-        FontFile = 'Tahoma.font',
-        AltFontFiles = { 'elisium/Tahoma.font', 'library/Tahoma.font', 'Tahoma.ttf', 'library/Tahoma.ttf' },
-    },
-};
-
-local function tryFontFromAsset(path)
-    if not isfile or not isfile(path) then
-        return nil;
-    end;
-
-    local okAsset, assetPath = pcall(getcustomasset, path);
-    if not okAsset or not assetPath then
-        return nil;
-    end;
-
-    local okFont, face = pcall(Font.new, assetPath, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-    if okFont and face then
-        return face;
-    end;
-
-    return nil;
-end;
-
-local function registerDownloadedFont(name, entry)
-    if not (writefile and isfile and getcustomasset and game.HttpGet) then
-        return nil;
-    end;
-
-    local ok, face = pcall(function()
-        local ttfName = entry.Ttf;
-        if not isfile(ttfName) then
-            writefile(ttfName, game:HttpGet(entry.Url));
-        end;
-
-        local fontFile = name .. '.font';
-        if isfile(fontFile) then
-            delfile(fontFile);
-        end;
-
-        local info = {
-            name = name,
-            faces = {
-                {
-                    name = 'Normal',
-                    weight = 400,
-                    style = 'Normal',
-                    assetId = getcustomasset(ttfName),
-                },
-            },
-        };
-
-        writefile(fontFile, HttpService:JSONEncode(info));
-        return Font.new(getcustomasset(fontFile), Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-    end);
-
-    if ok and face then
-        return face;
-    end;
-
-    return nil;
-end;
-
-local function loadCustomFontFace(name, entry)
-    if entry.FontFile or entry.AltFontFiles then
-        local paths = { entry.FontFile };
-        if entry.AltFontFiles then
-            for _, path in entry.AltFontFiles do
-                table.insert(paths, path);
-            end;
-        end;
-
-        for _, path in paths do
-            local face = tryFontFromAsset(path);
-            if face then
-                return face;
-            end;
-        end;
-    end;
-
-    if entry.Ttf and entry.Url then
-        return registerDownloadedFont(name, entry);
-    end;
-
-    return nil;
-end;
-
+local CUSTOM_UI_FONTS = {};
 local function resolveEnumFontFace(enumFont)
     local ok, face = pcall(Font.fromEnum, enumFont);
     if ok and face then
@@ -299,7 +195,7 @@ local RainbowStep = 0;
 local Hue = 0;
 local RainbowAccum = 0;
 
-table.insert(Library.Signals, RenderStepped:Connect(LPH_NO_VIRTUALIZE(function(Delta)
+table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
     RainbowAccum += Delta;
     if RainbowAccum < 0.05 then
         return
@@ -314,7 +210,7 @@ table.insert(Library.Signals, RenderStepped:Connect(LPH_NO_VIRTUALIZE(function(D
 
     Library.CurrentRainbowHue = Hue;
     Library.CurrentRainbowColor = Color3.fromHSV(Hue, 0.8, 1);
-end)));
+end));
 
 local function GetPlayersString()
     local PlayerList = Players:GetPlayers();
@@ -477,7 +373,7 @@ function Library:MakeDraggable(Instance, Cutoff)
         });
     end);
 
-    InputService.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(Input)
+    InputService.InputChanged:Connect(function(Input)
         if not Dragging or not DragPreview then return end;
 
         if Input == DragInput or (Input.UserInputType == Enum.UserInputType.MouseMovement and DragInput.UserInputType == Enum.UserInputType.MouseButton1) then
@@ -660,35 +556,8 @@ function Library:GetTextBounds(Text, Font, Size, Resolution)
 end;
 
 function Library:ScanCustomUIFonts()
-    local found = {};
-
-    local function scanDir(prefix)
-        if not listfiles then
-            return
-        end;
-
-        local ok, files = pcall(listfiles, prefix);
-        if not ok or not files then
-            return
-        end;
-
-        for _, path in files do
-            local lower = string.lower(path);
-            if lower:sub(-5) == '.font' or lower:sub(-4) == '.ttf' then
-                local name = path:match('([^/\\]+)%.%w+$');
-                if name and not ENUM_UI_FONTS[name] and not CUSTOM_UI_FONTS[name] then
-                    found[name] = path;
-                end;
-            end;
-        end;
-    end;
-
-    scanDir('');
-    scanDir('library');
-
-    return found;
+    return {};
 end;
-
 function Library:GetUIFontNames()
     local names = {};
     local seen = {};
@@ -729,15 +598,6 @@ function Library:LoadUIFont(name)
         return self.FontCache[name].FontFace, self.FontCache[name].Font;
     end;
 
-    local customEntry = CUSTOM_UI_FONTS[name];
-    if customEntry then
-        local face = loadCustomFontFace(name, customEntry);
-        if face then
-            self.FontCache[name] = { FontFace = face, Font = Enum.Font.Code };
-            return face, Enum.Font.Code;
-        end;
-    end;
-
     local enumFont = ENUM_UI_FONTS[name];
     if enumFont then
         local face = select(1, resolveEnumFontFace(enumFont));
@@ -745,39 +605,11 @@ function Library:LoadUIFont(name)
         return face, enumFont;
     end;
 
-    local scanned = self:ScanCustomUIFonts();
-    local path = scanned[name];
-    if path then
-        local face = tryFontFromAsset(path);
-
-        if not face and string.lower(path):sub(-4) == '.ttf' and writefile and isfile and getcustomasset then
-            local fontFile = name .. '.font';
-            if not isfile(fontFile) then
-                local info = {
-                    name = name,
-                    faces = {
-                        {
-                            name = 'Normal',
-                            weight = 400,
-                            style = 'Normal',
-                            assetId = getcustomasset(path),
-                        },
-                    },
-                };
-                writefile(fontFile, HttpService:JSONEncode(info));
-            end;
-            face = tryFontFromAsset(fontFile);
-        end;
-
-        if face then
-            self.FontCache[name] = { FontFace = face, Font = Enum.Font.Code };
-            return face, Enum.Font.Code;
-        end;
-    end;
-
-    return self:LoadUIFont(DefaultUIFont);
+    local fallback = ENUM_UI_FONTS[DefaultUIFont] or Enum.Font.BuilderSans;
+    local face = select(1, resolveEnumFontFace(fallback));
+    self.FontCache[name] = { FontFace = face, Font = fallback };
+    return face, fallback;
 end;
-
 function Library:ApplyFontToAll()
     for _, inst in ScreenGui:GetDescendants() do
         if inst:IsA('TextLabel') or inst:IsA('TextButton') or inst:IsA('TextBox') then
@@ -2357,7 +2189,7 @@ function Library:CreatePlayerListOverlay(Config)
         end;
     end;
 
-    Library:GiveSignal(RunService.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function()
+    Library:GiveSignal(RunService.RenderStepped:Connect(function()
         if not spectating then
             return
         end;
@@ -2380,7 +2212,7 @@ function Library:CreatePlayerListOverlay(Config)
         if camera.CameraType ~= Enum.CameraType.Custom then
             camera.CameraType = Enum.CameraType.Custom;
         end;
-    end)));
+    end));
 
     SpectateBtn.MouseButton1Click:Connect(function()
         if spectating then
@@ -2509,7 +2341,7 @@ function Library:CreateESPPreviewOverlay(Config)
 
         local previewAccum = 0;
         local previewStep = IsTouchDevice and 0.12 or 0.05;
-        Library:GiveSignal(RunService.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function(dt)
+        Library:GiveSignal(RunService.RenderStepped:Connect(function(dt)
             if not Overlay.Visible or not Overlay.Outer or not Overlay.Outer.Visible then
                 return
             end;
@@ -2527,7 +2359,7 @@ function Library:CreateESPPreviewOverlay(Config)
                 math.cos(angle) * radius
             );
             camera.CFrame = CFrame.lookAt(target + offset, target);
-        end)));
+        end));
     end;
 
     local Box = Library:Create('Frame', {
@@ -2871,7 +2703,7 @@ function Library:CreateClosestPlayerOverlay(Config)
         FitOverlay();
     end;
 
-    Library:GiveSignal(RunService.Heartbeat:Connect(LPH_NO_VIRTUALIZE(function(Delta)
+    Library:GiveSignal(RunService.Heartbeat:Connect(function(Delta)
         if not Overlay.Visible or not Overlay.Outer or not Overlay.Outer.Visible then
             return
         end;
@@ -2883,7 +2715,7 @@ function Library:CreateClosestPlayerOverlay(Config)
 
         refreshAccum = 0;
         Overlay:Refresh();
-    end)));
+    end));
 
     Library.ClosestPlayerOverlay = Overlay;
 
@@ -3307,7 +3139,7 @@ function Library:CreateRadarOverlay(Config)
         end;
     end;
 
-    local UpdateBlips = LPH_NO_VIRTUALIZE(function(Root, Camera)
+    local UpdateBlips = function(Root, Camera)
         local Origin = Root.Position;
         local BlipIndex = 0;
 
@@ -3341,7 +3173,7 @@ function Library:CreateRadarOverlay(Config)
         ArrowHolder.Rotation = math.deg(math.atan2(Look.X, -Look.Z));
     end);
 
-    local UpdateRadar = LPH_NO_VIRTUALIZE(function(Delta)
+    local UpdateRadar = function(Delta)
         if not Overlay.Visible then
             return
         end;
@@ -3492,7 +3324,7 @@ function Library:CreateVelocityGraphOverlay(Config)
         Segment.Visible = true;
     end;
 
-    local UpdateGraph = LPH_NO_VIRTUALIZE(function()
+    local UpdateGraph = function()
         if not Overlay.Visible or not Overlay.Outer or not Overlay.Outer.Visible then
             SetGraphVisible(false);
             return
@@ -5071,7 +4903,7 @@ do
         local function StartCaretBlink()
             StopCaretBlink();
 
-            CaretBlinkConnection = RunService.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function()
+            CaretBlinkConnection = RunService.RenderStepped:Connect(function()
                 if not Box:IsFocused() then
                     StopCaretBlink();
                 end;
@@ -6764,7 +6596,7 @@ function Library:SetWatermark(Text)
     Library:SetAccentTitle(Library.WatermarkText, rawText, Library.WatermarkAccentPart or '.lol');
 end;
 
-getgenv().elisium_wm = getgenv().elisium_wm or { ping = true, executor = false, fps = true, time = true };
+local elisium_wm = { ping = true, executor = false, fps = true, time = true };
 task.spawn(function()
     local fps = 60;
     local execName = nil;
@@ -6777,24 +6609,9 @@ task.spawn(function()
         return 0;
     end;
 
-    local function getExecutor()
-        if execName ~= nil then return execName end;
-        local fn = identifyexecutor or getexecutorname;
-        if fn then
-            local ok, name, ver = pcall(fn);
-            if ok and name then
-                execName = tostring(name);
-                if ver and tostring(ver) ~= "" then execName = execName .. " " .. tostring(ver) end;
-            else
-                execName = "";
-            end;
-        else
-            execName = "";
-        end;
-        return execName;
-    end;
+    local function getExecutor() return ''; end;
 
-    RunService.RenderStepped:Connect(LPH_NO_VIRTUALIZE(function(dt)
+    RunService.RenderStepped:Connect(function(dt)
         if dt and dt > 0 then
             local instant = 1 / dt;
             fps = fps + (instant - fps) * 0.1;
@@ -6803,7 +6620,7 @@ task.spawn(function()
 
     while task.wait(0.5) do
         if Library.Watermark and Library.Watermark.Visible then
-            local wm = getgenv().elisium_wm or {};
+            local wm = elisium_wm;
             local parts = { "Elisium.lol" };
             if wm.fps ~= false then
                 parts[#parts + 1] = string.format("%d fps", math.floor(fps + 0.5));
@@ -6830,28 +6647,7 @@ local SOUND_URLS = {
 };
 
 function Library:EnsureSoundFile(Folder, FileName, Url)
-    if not writefile or not isfile or not getcustomasset then
-        return nil;
-    end;
-
-    local Path = Folder .. '/sounds/' .. FileName;
-    if not isfile(Path) then
-        if not game.HttpGet then
-            return nil;
-        end;
-
-        local Success, Content = pcall(function()
-            return game:HttpGet(Url);
-        end);
-
-        if not Success or not Content then
-            return nil;
-        end;
-
-        writefile(Path, Content);
-    end;
-
-    return getcustomasset(Path);
+    return nil;
 end;
 
 function Library:ApplySoundSettings(Settings)
@@ -6867,34 +6663,11 @@ function Library:ApplySoundSettings(Settings)
 end;
 
 function Library:SaveSoundSettings()
-    if not writefile then
-        return;
-    end;
-
-    local SettingsPath = (self.SoundSettingsFolder or 'elisium') .. '/settings/sounds.json';
-    local Data = {
-        ToggleSoundEnabled = self.ToggleSoundEnabled;
-        NotificationSoundEnabled = self.NotificationSoundEnabled;
-        SliderSoundEnabled = self.SliderSoundEnabled;
-        ToggleSoundVolume = self.ToggleSoundVolume;
-        ToggleSoundSpeed = self.ToggleSoundSpeed;
-        NotificationSoundVolume = self.NotificationSoundVolume;
-        NotificationSoundSpeed = self.NotificationSoundSpeed;
-        SliderSoundVolume = self.SliderSoundVolume;
-        SliderSoundSpeed = self.SliderSoundSpeed;
-    };
-
-    local Success, Encoded = pcall(function()
-        return HttpService:JSONEncode(Data);
-    end);
-
-    if Success then
-        writefile(SettingsPath, Encoded);
-    end;
+    return;
 end;
 
 function Library:InitSoundSettings(Folder)
-    local Defaults = {
+    local Settings = {
         ToggleSoundEnabled = true;
         NotificationSoundEnabled = true;
         SliderSoundEnabled = true;
@@ -6905,253 +6678,15 @@ function Library:InitSoundSettings(Folder)
         SliderSoundVolume = 1;
         SliderSoundSpeed = 1;
     };
-
     self.SoundSettingsFolder = Folder or 'elisium';
-    local SettingsPath = self.SoundSettingsFolder .. '/settings/sounds.json';
-    local Settings = Defaults;
-
-    if isfile and readfile and isfile(SettingsPath) then
-        local Success, Decoded = pcall(function()
-            return HttpService:JSONDecode(readfile(SettingsPath));
-        end);
-
-        if Success and type(Decoded) == 'table' then
-            for Key, Value in next, Defaults do
-                if Decoded[Key] ~= nil then
-                    Settings[Key] = Decoded[Key];
-                end;
-            end;
-        end;
-    end;
-
     self:ApplySoundSettings(Settings);
-
-    if not isfile or not isfile(SettingsPath) then
-        self:SaveSoundSettings();
-    end;
-
     self:InitSoundAssets();
 end;
 
 function Library:InitSoundAssets()
-    local Folder = self.SoundSettingsFolder or 'elisium';
-
-    if not self.ToggleSound then
-        local ToggleAsset = self:EnsureSoundFile(Folder, 'toggle.mp3', SOUND_URLS.Toggle);
-        if ToggleAsset then
-            self.ToggleSound = Instance.new('Sound');
-            self.ToggleSound.Name = 'ElisiumToggleSound';
-            self.ToggleSound.SoundId = ToggleAsset;
-            self.ToggleSound.Volume = self.ToggleSoundVolume;
-            self.ToggleSound.PlaybackSpeed = self.ToggleSoundSpeed;
-            self.ToggleSound.Parent = SoundService;
-        end;
-    end;
-
-    if not self.NotificationSound then
-        local NotifyAsset = self:EnsureSoundFile(Folder, 'notify.mp3', SOUND_URLS.Notification);
-        if NotifyAsset then
-            self.NotificationSound = Instance.new('Sound');
-            self.NotificationSound.Name = 'ElisiumNotificationSound';
-            self.NotificationSound.SoundId = NotifyAsset;
-            self.NotificationSound.Volume = self.NotificationSoundVolume;
-            self.NotificationSound.PlaybackSpeed = self.NotificationSoundSpeed;
-            self.NotificationSound.Parent = SoundService;
-        end;
-    end;
-
-    if not self.SliderSound then
-        local SliderAsset = self:EnsureSoundFile(Folder, 'slider.mp3', SOUND_URLS.Slider);
-        if SliderAsset then
-            self.SliderSound = Instance.new('Sound');
-            self.SliderSound.Name = 'ElisiumSliderSound';
-            self.SliderSound.SoundId = SliderAsset;
-            self.SliderSound.Volume = self.SliderSoundVolume;
-            self.SliderSound.PlaybackSpeed = self.SliderSoundSpeed;
-            self.SliderSound.Parent = SoundService;
-        end;
-    end;
-
-    self._SoundAssetsInitialized = true;
-end;
-
-function Library:PlaySliderSound()
-    if not self.SliderSoundEnabled then
-        return
-    end;
-
-    self:InitSoundAssets();
-
-    local Sound = self.SliderSound;
-    if not Sound then
-        return
-    end;
-
-    Sound.Volume = self.SliderSoundVolume;
-    Sound.PlaybackSpeed = self.SliderSoundSpeed;
-
-    if Sound.IsPlaying then
-        Sound:Stop();
-    end;
-
-    Sound.TimePosition = 0;
-    Sound:Play();
-end;
-
-function Library:StopSliderSound()
-    local Sound = self.SliderSound;
-    if Sound and Sound.IsPlaying then
-        Sound:Stop();
-    end;
-end;
-
-function Library:PlayToggleSound()
-    if not self.ToggleSoundEnabled then
-        return;
-    end;
-
-    self:InitSoundAssets();
-
-    local Sound = self.ToggleSound;
-    if not Sound then
-        return;
-    end;
-
-    Sound.Volume = self.ToggleSoundVolume;
-    Sound.PlaybackSpeed = self.ToggleSoundSpeed;
-
-    if Sound.IsPlaying then
-        Sound:Stop();
-    end;
-
-    Sound.TimePosition = 0;
-    Sound:Play();
-end;
-
-function Library:PlayNotificationSound()
-    if not self.NotificationSoundEnabled then
-        return;
-    end;
-
-    self:InitSoundAssets();
-
-    local Sound = self.NotificationSound;
-    if not Sound then
-        return;
-    end;
-
-    Sound.Volume = self.NotificationSoundVolume;
-    Sound.PlaybackSpeed = self.NotificationSoundSpeed;
-
-    if Sound.IsPlaying then
-        Sound:Stop();
-    end;
-
-    Sound.TimePosition = 0;
-    Sound:Play();
-end;
-
-function Library:Notify(Text, Time)
-    Library:PlayNotificationSound();
-
-    local Duration = Time or 5;
-    local TextSize = 13;
-    local BarHeight = 2;
-    local PadX = 10;
-    local PadY = 6;
-
-    local XSize, YSize = Library:GetTextBounds(Text, Library.Font, TextSize);
-    local TotalW = math.ceil(XSize + PadX * 2 + 20);
-    local TotalH = math.ceil(YSize + PadY * 2 + BarHeight + 4);
-
-    Library.NotificationIndex = (Library.NotificationIndex or 0) + 1;
-
-    local NotifyOuter = Library:Create('Frame', {
-        BackgroundTransparency = 1;
-        BorderSizePixel = 0;
-        ClipsDescendants = true;
-        LayoutOrder = Library.NotificationIndex;
-        Size = UDim2.fromOffset(TotalW, TotalH);
-        ZIndex = 100;
-        Parent = Library.NotificationArea;
-    });
-
-    local NotifyInner = Library:Create('Frame', {
-        BackgroundColor3 = Library.BackgroundColor;
-        BorderColor3 = Library.OutlineColor;
-        BorderMode = Enum.BorderMode.Inset;
-        Size = UDim2.new(1, 0, 1, 0);
-        ZIndex = 101;
-        Parent = NotifyOuter;
-    });
-
-    Library:AddToRegistry(NotifyInner, {
-        BackgroundColor3 = 'BackgroundColor';
-        BorderColor3 = 'OutlineColor';
-    }, true);
-
-    local function ApplySize(width, height)
-        TotalW = width;
-        TotalH = height;
-        NotifyOuter.Size = UDim2.fromOffset(TotalW, TotalH);
-    end;
-
-    Library:PlayNotificationEnter(NotifyInner, TotalW);
-
-    local NotifyLabel = Library:CreateLabel({
-        Position = UDim2.new(0, PadX, 0, PadY);
-        Size = UDim2.new(1, -PadX * 2, 1, -(PadY * 2 + BarHeight));
-        Text = Text;
-        RichText = true;
-        TextSize = TextSize;
-        TextWrapped = false;
-        TextTruncate = Enum.TextTruncate.None;
-        TextXAlignment = Enum.TextXAlignment.Left;
-        TextYAlignment = Enum.TextYAlignment.Top;
-        ZIndex = 103;
-        Parent = NotifyInner;
-    });
-
-    Library:AddToRegistry(NotifyLabel, {
-        TextColor3 = 'FontColor';
-    }, true);
-
-    task.defer(function()
-        if not NotifyLabel.Parent then
-            return
-        end;
-
-        local measuredW = NotifyLabel.TextBounds.X + PadX * 2 + 16;
-        local measuredH = math.max(NotifyLabel.TextBounds.Y + PadY * 2 + BarHeight + 4, TotalH);
-        if measuredW > TotalW then
-            ApplySize(math.ceil(measuredW), measuredH);
-        end;
-    end);
-
-    local ProgressBar = Library:Create('Frame', {
-        BackgroundColor3 = Library.AccentColor;
-        BorderSizePixel = 0;
-        Position = UDim2.new(0, 0, 1, -BarHeight);
-        Size = UDim2.new(1, 0, 0, BarHeight);
-        ZIndex = 104;
-        Parent = NotifyInner;
-    });
-
-    Library:AddToRegistry(ProgressBar, {
-        BackgroundColor3 = 'AccentColor';
-    }, true);
-
-    TweenService:Create(ProgressBar, TweenInfo.new(Duration, Enum.EasingStyle.Linear), {
-        Size = UDim2.new(0, 0, 0, BarHeight);
-    }):Play();
-
-    task.spawn(function()
-        task.wait(Duration);
-
-        Library:PlayNotificationExit(NotifyInner, TotalW, function()
-            NotifyOuter:Destroy();
-        end);
-    end);
+    self.ToggleSound = nil;
+    self.NotificationSound = nil;
+    self.SliderSound = nil;
 end;
 
 function Library:CreateWindow(...)
@@ -7173,16 +6708,7 @@ function Library:CreateWindow(...)
     if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(460, 400) end
 
     do
-        local saved = getgenv().elisium_ui_size;
-        if not saved then
-            pcall(function()
-                if isfile and isfile('Elisium/ui_size.txt') then
-                    local d = tostring(readfile('Elisium/ui_size.txt'));
-                    local x, y = d:match('(%d+),(%d+)');
-                    if x and y then saved = { tonumber(x), tonumber(y) } end;
-                end;
-            end);
-        end;
+        local saved = Library._SavedWindowSize;
         if type(saved) == 'table' and tonumber(saved[1]) and tonumber(saved[2]) then
             Config.Size = UDim2.fromOffset(tonumber(saved[1]), tonumber(saved[2]));
         end;
@@ -7235,13 +6761,7 @@ function Library:CreateWindow(...)
         Library.MainWindowOuter = Outer;
         local function persistSize()
             local s = Outer.AbsoluteSize;
-            getgenv().elisium_ui_size = { math.floor(s.X), math.floor(s.Y) };
-            pcall(function()
-                if writefile then
-                    if makefolder and isfolder and not isfolder('Elisium') then makefolder('Elisium') end;
-                    writefile('Elisium/ui_size.txt', math.floor(s.X) .. ',' .. math.floor(s.Y));
-                end;
-            end);
+            Library._SavedWindowSize = { math.floor(s.X), math.floor(s.Y) };
         end;
         function Library:GetWindowSize()
             local s = Outer.AbsoluteSize;
@@ -7285,14 +6805,14 @@ function Library:CreateWindow(...)
                 startSize = Outer.AbsoluteSize;
             end;
         end);
-        Library:GiveSignal(UIS.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(input)
+        Library:GiveSignal(UIS.InputChanged:Connect(function(input)
             if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 local cur = UIS:GetMouseLocation();
                 local w = math.max(MINW, startSize.X + (cur.X - startPos.X));
                 local h = math.max(MINH, startSize.Y + (cur.Y - startPos.Y));
                 Outer.Size = UDim2.fromOffset(w, h);
             end;
-        end)));
+        end));
         Library:GiveSignal(UIS.InputEnded:Connect(function(input)
             if resizing and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                 resizing = false;
@@ -8076,7 +7596,6 @@ Players.PlayerRemoving:Connect(OnPlayerChange);
 Library.Toggles = Toggles;
 Library.Options = Options;
 
-getgenv().Library = Library;
 
 return Library;
 end)();
